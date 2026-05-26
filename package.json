@@ -5,8 +5,12 @@
   "description": "Ask questions about your Neovim configuration using Raycast AI. Search plugins, keybindings, LSP setup, and more with @neovim-expert.",
   "icon": "icon.png",
   "author": "coleconrad",
-  "categories": ["Developer Tools"],
-  "platforms": ["macOS"],
+  "categories": [
+    "Developer Tools"
+  ],
+  "platforms": [
+    "macOS"
+  ],
   "license": "MIT",
   "preferences": [
     {
@@ -64,6 +68,8 @@
     "@raycast/eslint-config": "^1.0.11",
     "@types/node": "^22.14.1",
     "@types/react": "^19.0.10",
+    "@typescript-eslint/eslint-plugin": "^8.60.0",
+    "@typescript-eslint/parser": "^8.60.0",
     "eslint": "^9.0.0",
     "typescript": "^5.8.0",
     "vitest": "^3.2.0"
