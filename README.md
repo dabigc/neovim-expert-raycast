@@ -26,3 +26,18 @@ The extension auto-detects your Neovim config at `~/.config/nvim`. To use a cust
 - "Show me my Go LSP config"
 - "What formatter do I use for YAML?"
 - "How is completion set up?"
+
+## Development
+
+```bash
+npm install --legacy-peer-deps
+npm test                          # Run tests
+npm test -- --coverage            # Run with coverage (95% threshold enforced)
+npm run dev                       # Start Raycast dev mode
+```
+
+After cloning, configure the pre-push hook:
+
+```bash
+git config core.hooksPath .githooks
+```
