@@ -1,0 +1,7 @@
+{
+  "LazyVim": { "branch": "main", "commit": "a1b2c3d" },
+  "telescope.nvim": { "branch": "master", "commit": "e4f5a6b" },
+  "nvim-treesitter": { "branch": "master", "commit": "c7d8e9f" },
+  "nvim-lspconfig": { "branch": "master", "commit": "1a2b3c4" },
+  "gitsigns.nvim": { "branch": "main", "commit": "5d6e7f8" }
+}
