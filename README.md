@@ -1,6 +1,10 @@
-# Neovim Expert
+<p align="center">
+  <img src="assets/icon.png" width="128" height="128" alt="Neovim Expert icon" />
+</p>
 
-Ask questions about your Neovim configuration using Raycast AI.
+<h1 align="center">Neovim Expert for Raycast</h1>
+
+<p align="center">Ask questions about your Neovim configuration using Raycast AI.</p>
 
 Type `@neovim-expert` in Raycast AI Chat to search plugins, keybindings, LSP setup, and more.
 
