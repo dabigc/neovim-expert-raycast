@@ -1,0 +1,80 @@
+{
+  "$schema": "https://www.raycast.com/schemas/extension.json",
+  "name": "neovim-expert",
+  "title": "Neovim Expert",
+  "description": "Ask questions about your Neovim configuration using Raycast AI. Search plugins, keybindings, LSP setup, and more with @neovim-expert.",
+  "icon": "icon.png",
+  "author": "coleconrad",
+  "categories": ["Developer Tools"],
+  "platforms": ["macOS"],
+  "license": "MIT",
+  "preferences": [
+    {
+      "name": "configPath",
+      "type": "directory",
+      "required": false,
+      "title": "Neovim Config Directory",
+      "description": "Path to your Neovim configuration directory. If not set, auto-detects ~/.config/nvim.",
+      "placeholder": "~/.config/nvim"
+    }
+  ],
+  "commands": [],
+  "tools": [
+    {
+      "name": "getConfigSummary",
+      "title": "Get Config Summary",
+      "description": "Get a high-level overview of the Neovim configuration including detected plugin manager, key files, and directory structure.",
+      "instructions": "Use this tool first before answering any question. It tells you what plugin manager is used, what key files exist, and the overall structure of the config."
+    },
+    {
+      "name": "listConfigFiles",
+      "title": "List Config Files",
+      "description": "List all files in the Neovim configuration directory or a subdirectory.",
+      "instructions": "Use this tool to see the file tree. Optionally scope to a subdirectory like 'lua/plugins' to narrow the listing."
+    },
+    {
+      "name": "readConfigFile",
+      "title": "Read Config File",
+      "description": "Read the contents of a specific Neovim configuration file by its relative path.",
+      "instructions": "Use this tool to read a specific file. The filePath must be relative to the config directory (e.g., 'lua/plugins/go.lua', 'init.lua')."
+    },
+    {
+      "name": "listPlugins",
+      "title": "List Plugins",
+      "description": "List all installed or configured Neovim plugins with best-effort parsing of the plugin manager format.",
+      "instructions": "Use this tool to get a list of plugins. It auto-detects the plugin manager (lazy.nvim, packer, vim-plug) and parses accordingly. Falls back to scanning Lua files for plugin spec patterns."
+    },
+    {
+      "name": "searchConfig",
+      "title": "Search Config",
+      "description": "Search across all Neovim configuration files for a term, returning matching lines with file paths and line numbers.",
+      "instructions": "Use this tool to grep across config files. Supports optional file pattern filtering (e.g., '*.lua'). Case-insensitive. Use for finding specific settings, options, or references."
+    },
+    {
+      "name": "searchKeybindings",
+      "title": "Search Keybindings",
+      "description": "Find keybinding definitions across the Neovim configuration, scanning for vim.keymap.set, map/nmap/imap commands, and lazy.nvim keys tables.",
+      "instructions": "Use this tool to find keybinding definitions. Optionally filter by key or description. Returns mode, key, action, and source file for each binding."
+    }
+  ],
+  "dependencies": {
+    "@raycast/api": "^1.94.0"
+  },
+  "devDependencies": {
+    "@raycast/eslint-config": "^1.0.11",
+    "@types/node": "^22.14.1",
+    "@types/react": "^19.0.10",
+    "eslint": "^9.0.0",
+    "typescript": "^5.8.0",
+    "vitest": "^3.2.0"
+  },
+  "scripts": {
+    "build": "ray build",
+    "dev": "ray develop",
+    "lint": "ray lint",
+    "fix-lint": "ray lint --fix",
+    "publish": "npx @raycast/api@latest publish",
+    "test": "vitest run",
+    "test:watch": "vitest"
+  }
+}
