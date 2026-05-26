@@ -37,6 +37,27 @@ describe("scanPackerPlugins", () => {
     expect(plugins).toContainEqual({ name: "nvim-treesitter" });
     expect(plugins).toHaveLength(3);
   });
+
+  it("handles plugin names without org prefix (no slash)", () => {
+    const content = `
+      use 'standalone-plugin'
+      use 'another-plugin'
+    `;
+    const plugins = scanPackerPlugins(content);
+    expect(plugins).toContainEqual({ name: "standalone-plugin" });
+    expect(plugins).toContainEqual({ name: "another-plugin" });
+    expect(plugins).toHaveLength(2);
+  });
+
+  it("deduplicates plugins across both use patterns", () => {
+    const content = `
+      use 'my-plugin'
+      use { 'my-plugin' }
+    `;
+    const plugins = scanPackerPlugins(content);
+    expect(plugins).toHaveLength(1);
+    expect(plugins[0].name).toBe("my-plugin");
+  });
 });
 
 describe("scanVimPlugPlugins", () => {
@@ -47,6 +68,19 @@ describe("scanVimPlugPlugins", () => {
     expect(plugins).toContainEqual({ name: "fzf.vim" });
     expect(plugins).toContainEqual({ name: "vim-fugitive" });
     expect(plugins).toHaveLength(3);
+  });
+
+  it("handles plugin names without org prefix (no slash)", () => {
+    const content = `
+      call plug#begin()
+      Plug 'standalone-vim-plugin'
+      Plug 'another-standalone'
+      call plug#end()
+    `;
+    const plugins = scanVimPlugPlugins(content);
+    expect(plugins).toContainEqual({ name: "standalone-vim-plugin" });
+    expect(plugins).toContainEqual({ name: "another-standalone" });
+    expect(plugins).toHaveLength(2);
   });
 });
 

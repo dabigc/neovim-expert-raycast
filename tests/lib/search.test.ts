@@ -1,6 +1,9 @@
-import { describe, it, expect } from "vitest";
+import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { listFiles, grepFiles, extractKeybindings } from "../../src/lib/search";
-import { resolve } from "node:path";
+import { resolve, join } from "node:path";
+import { mkdirSync, writeFileSync, chmodSync, rmSync, mkdtempSync, readFileSync } from "node:fs";
+import { tmpdir } from "node:os";
+import * as fs from "node:fs";
 
 const fixtures = resolve(__dirname, "../../tests/fixtures");
 const lazyFixture = resolve(fixtures, "lazy-nvim");
@@ -88,5 +91,176 @@ describe("extractKeybindings", () => {
     const bindings = extractKeybindings(lazyFixture, "jj");
     expect(bindings).toHaveLength(1);
     expect(bindings[0].key).toBe("jj");
+  });
+
+  it("extracts all vim mode mappings (v, x, o, s, t, c)", () => {
+    let tmpDir: string;
+    tmpDir = mkdtempSync(join(tmpdir(), "search-vim-modes-"));
+
+    const vimContent = [
+      "vmap <leader>v :visual",
+      "xmap <leader>x :xmode",
+      "omap <leader>o :omode",
+      "smap <leader>s :smode",
+      "tmap <leader>t :tmode",
+      "cmap <leader>c :cmode",
+      "nmap <leader>n :nmode",
+    ].join("\n");
+
+    writeFileSync(join(tmpDir, "mappings.vim"), vimContent);
+
+    const bindings = extractKeybindings(tmpDir);
+
+    const findMode = (mode: string) => bindings.find((b) => b.mode === mode);
+    expect(findMode("v")).toBeDefined();
+    expect(findMode("v")!.key).toBe("<leader>v");
+    expect(findMode("x")).toBeDefined();
+    expect(findMode("o")).toBeDefined();
+    expect(findMode("s")).toBeDefined();
+    expect(findMode("t")).toBeDefined();
+    expect(findMode("c")).toBeDefined();
+    expect(findMode("n")).toBeDefined();
+
+    rmSync(tmpDir, { recursive: true, force: true });
+  });
+
+  it("deduplicates lazy keys that match vim.keymap.set bindings", () => {
+    let tmpDir: string;
+    tmpDir = mkdtempSync(join(tmpdir(), "search-dedup-"));
+
+    // Create a lua file where the same key appears in both vim.keymap.set
+    // and lazy keys spec format — the dedup branch should skip the second
+    const luaContent = [
+      'vim.keymap.set("n", "<leader>ff", ":Telescope find_files", { desc = "Find files" })',
+      '{ "<leader>ff", ":Telescope find_files", desc = "Find files" }',
+    ].join("\n");
+
+    writeFileSync(join(tmpDir, "keys.lua"), luaContent);
+
+    const bindings = extractKeybindings(tmpDir);
+    const ffBindings = bindings.filter((b) => b.key === "<leader>ff");
+    // Should have only one entry due to dedup
+    expect(ffBindings).toHaveLength(1);
+
+    rmSync(tmpDir, { recursive: true, force: true });
+  });
+});
+
+describe("listFiles error handling", () => {
+  let tmpDir: string;
+
+  beforeEach(() => {
+    tmpDir = mkdtempSync(join(tmpdir(), "search-list-test-"));
+  });
+
+  afterEach(() => {
+    const restorePerms = (dir: string) => {
+      try {
+        chmodSync(dir, 0o755);
+        for (const entry of fs.readdirSync(dir)) {
+          const full = join(dir, entry);
+          try {
+            if (fs.statSync(full).isDirectory()) restorePerms(full);
+          } catch { /* skip */ }
+        }
+      } catch { /* skip */ }
+    };
+    restorePerms(tmpDir);
+    rmSync(tmpDir, { recursive: true, force: true });
+  });
+
+  it("handles unreadable subdirectories gracefully", () => {
+    // Create a dir with a readable file and an unreadable subdirectory
+    writeFileSync(join(tmpDir, "init.lua"), "-- top level\n");
+    const subDir = join(tmpDir, "lua");
+    mkdirSync(subDir);
+    writeFileSync(join(subDir, "hidden.lua"), "-- hidden\n");
+    chmodSync(subDir, 0o000);
+
+    const files = listFiles(tmpDir);
+    // Should only find the top-level file, not crash
+    expect(files.map((f) => f.relativePath)).toContain("init.lua");
+    expect(files.map((f) => f.relativePath)).not.toContain("lua/hidden.lua");
+  });
+
+  it("handles stat errors on individual entries", () => {
+    // Create a broken symlink — statSync will throw ENOENT
+    writeFileSync(join(tmpDir, "real.lua"), "-- real file\n");
+    const { symlinkSync } = require("node:fs");
+    symlinkSync(join(tmpDir, "nonexistent-target"), join(tmpDir, "broken.lua"));
+
+    const files = listFiles(tmpDir);
+    // Should skip the broken symlink and still list the real file
+    expect(files.map((f) => f.relativePath)).toContain("real.lua");
+    expect(files).toHaveLength(1);
+  });
+
+  it("returns empty array for nonexistent directory", () => {
+    const files = listFiles(join(tmpDir, "nonexistent"));
+    expect(files).toEqual([]);
+  });
+
+  it("excludes .git, node_modules, plugin, and .DS_Store directories", () => {
+    writeFileSync(join(tmpDir, "init.lua"), "-- top\n");
+
+    for (const excluded of [".git", "node_modules", "plugin", ".DS_Store"]) {
+      const dir = join(tmpDir, excluded);
+      mkdirSync(dir);
+      writeFileSync(join(dir, "should-skip.lua"), "-- excluded\n");
+    }
+
+    const files = listFiles(tmpDir);
+    expect(files).toHaveLength(1);
+    expect(files[0].relativePath).toBe("init.lua");
+  });
+});
+
+describe("error handling", () => {
+  let tmpDir: string;
+
+  beforeEach(() => {
+    tmpDir = mkdtempSync(join(tmpdir(), "search-test-"));
+  });
+
+  afterEach(() => {
+    // Restore permissions before cleanup
+    const restorePerms = (dir: string) => {
+      try {
+        chmodSync(dir, 0o755);
+        for (const entry of fs.readdirSync(dir)) {
+          const full = join(dir, entry);
+          try {
+            if (fs.statSync(full).isDirectory()) restorePerms(full);
+          } catch { /* skip */ }
+        }
+      } catch { /* skip */ }
+    };
+    restorePerms(tmpDir);
+    rmSync(tmpDir, { recursive: true, force: true });
+    vi.restoreAllMocks();
+  });
+
+  it("grepFiles skips files that cannot be read", () => {
+    // Create two files, make one unreadable via chmod
+    writeFileSync(join(tmpDir, "good.lua"), 'vim.keymap.set("n", "<leader>f", ":find")\n');
+    writeFileSync(join(tmpDir, "bad.lua"), "this should not be read\n");
+    chmodSync(join(tmpDir, "bad.lua"), 0o000);
+
+    const results = grepFiles(tmpDir, "keymap");
+    // Only the readable file should produce results
+    expect(results).toHaveLength(1);
+    expect(results[0].file).toBe("good.lua");
+  });
+
+  it("extractKeybindings skips files that cannot be read", () => {
+    // Create two lua files, make one unreadable via chmod
+    writeFileSync(join(tmpDir, "real.lua"), 'vim.keymap.set("n", "<leader>x", ":quit")\n');
+    writeFileSync(join(tmpDir, "unreadable.lua"), 'vim.keymap.set("n", "<leader>y", ":write")\n');
+    chmodSync(join(tmpDir, "unreadable.lua"), 0o000);
+
+    const bindings = extractKeybindings(tmpDir);
+    // Only the readable file should produce bindings
+    expect(bindings).toHaveLength(1);
+    expect(bindings[0].key).toBe("<leader>x");
   });
 });

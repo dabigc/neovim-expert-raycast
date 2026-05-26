@@ -15,4 +15,13 @@ type ExtensionPreferences = {
 /** Preferences accessible in all the extension's commands */
 declare type Preferences = ExtensionPreferences
 
+declare namespace Preferences {
+  /** Preferences accessible in the `open-config` command */
+  export type OpenConfig = ExtensionPreferences & {}
+}
+
+declare namespace Arguments {
+  /** Arguments passed to the `open-config` command */
+  export type OpenConfig = {}
+}
 

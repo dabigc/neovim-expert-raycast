@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { resolveConfigPath, validatePath } from "../../src/lib/config";
+import { resolveConfigPath, resolveConfigPathOrError, validatePath } from "../../src/lib/config";
 import { existsSync } from "node:fs";
 import * as path from "node:path";
 
@@ -64,6 +64,32 @@ describe("resolveConfigPath", () => {
 
     const result = resolveConfigPath();
     expect(result).toBeNull();
+  });
+});
+
+describe("resolveConfigPathOrError", () => {
+  beforeEach(() => {
+    vi.restoreAllMocks();
+  });
+
+  it("returns the config path when it exists", async () => {
+    const { getPreferenceValues } = await import("@raycast/api");
+    vi.mocked(getPreferenceValues).mockReturnValue({ configPath: "/tmp/test-nvim" });
+    vi.mocked(existsSync).mockReturnValue(true);
+
+    const result = resolveConfigPathOrError();
+    expect(result).toBe("/tmp/test-nvim");
+  });
+
+  it("returns an error message when no config exists", async () => {
+    const { getPreferenceValues } = await import("@raycast/api");
+    vi.mocked(getPreferenceValues).mockReturnValue({ configPath: "" });
+    delete process.env.XDG_CONFIG_HOME;
+    vi.mocked(existsSync).mockReturnValue(false);
+
+    const result = resolveConfigPathOrError();
+    expect(result).toContain("No Neovim configuration directory found");
+    expect(result).toContain("Raycast Settings");
   });
 });
 
