@@ -22,7 +22,15 @@
       "placeholder": "~/.config/nvim"
     }
   ],
-  "commands": [],
+  "commands": [
+    {
+      "name": "open-config",
+      "title": "Open Neovim Config",
+      "subtitle": "Neovim Expert",
+      "description": "Open your Neovim configuration directory in Finder",
+      "mode": "no-view"
+    }
+  ],
   "tools": [
     {
       "name": "getConfigSummary",
