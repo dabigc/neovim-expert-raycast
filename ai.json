@@ -1,0 +1,83 @@
+{
+  "instructions": "You help users understand and navigate their Neovim configuration. Before answering questions, use getConfigSummary to understand the user's setup. Use the detected plugin manager and directory structure to guide which tools to call next. For questions about specific plugins: use listPlugins to find the plugin, then readConfigFile to read its configuration. For questions about keybindings: use searchKeybindings, optionally filtered by key or description. For general questions: use searchConfig to find relevant configuration across all files. Always reference specific file paths in your answers so the user knows where to make changes.",
+  "evals": [
+    {
+      "input": "@neovim-expert what plugins do I have?",
+      "mocks": {
+        "getConfigSummary": "Neovim Configuration Summary\nPath: /Users/test/.config/nvim\nTotal files: 12\n\nPlugin Manager: lazy.nvim (detected via: lazy-lock.json)\n\nKey files:\n  - init.lua\n  - lazy-lock.json\n  - lua/config/keymaps.lua\n  - lua/config/options.lua\n\nDirectories:\n  - lua/",
+        "listPlugins": "Found 5 plugin(s) (via lazy.nvim):\n\n- LazyVim [main] @ a1b2c3d\n- gitsigns.nvim [main] @ 5d6e7f8\n- nvim-lspconfig [master] @ 1a2b3c4\n- nvim-treesitter [master] @ c7d8e9f\n- telescope.nvim [master] @ e4f5a6b"
+      },
+      "expected": [
+        { "callsTool": { "name": "getConfigSummary" } },
+        { "callsTool": { "name": "listPlugins" } }
+      ]
+    },
+    {
+      "input": "@neovim-expert what does leader-f do?",
+      "mocks": {
+        "getConfigSummary": "Neovim Configuration Summary\nPath: /Users/test/.config/nvim\nTotal files: 12\n\nPlugin Manager: lazy.nvim (detected via: lazy-lock.json)\n\nKey files:\n  - init.lua\n  - lua/config/keymaps.lua\n\nDirectories:\n  - lua/",
+        "searchKeybindings": "Found 2 keybinding(s) matching \"f\":\n\n[n] <leader>ff → <cmd>Telescope find_files<cr> (Find Files)  (lua/plugins/editor.lua)\n[n] <leader>fg → <cmd>Telescope live_grep<cr> (Live Grep)  (lua/plugins/editor.lua)"
+      },
+      "expected": [
+        { "callsTool": { "name": "getConfigSummary" } },
+        { "callsTool": { "name": "searchKeybindings", "arguments": { "query": "f" } } }
+      ]
+    },
+    {
+      "input": "@neovim-expert show me my Go LSP config",
+      "mocks": {
+        "getConfigSummary": "Neovim Configuration Summary\nPath: /Users/test/.config/nvim\nTotal files: 12\n\nPlugin Manager: lazy.nvim (detected via: lazy-lock.json)\n\nKey files:\n  - init.lua\n\nDirectories:\n  - lua/",
+        "searchConfig": "Found 3 match(es) for \"gopls\":\n\nlua/plugins/go.lua:5: servers = { gopls = {\nlua/plugins/go.lua:6:   settings = { gopls = {\nlua/plugins/go.lua:12: } }",
+        "readConfigFile": "File: lua/plugins/go.lua\n\nreturn {\n  { 'neovim/nvim-lspconfig', opts = { servers = { gopls = { settings = { gopls = { analyses = { unusedparams = true } } } } } } }\n}"
+      },
+      "expected": [
+        { "callsTool": { "name": "getConfigSummary" } },
+        {
+          "or": [
+            { "callsTool": { "name": "searchConfig", "arguments": { "query": { "includes": "go" } } } },
+            { "callsTool": { "name": "searchConfig", "arguments": { "query": { "includes": "gopls" } } } },
+            { "callsTool": { "name": "readConfigFile" } }
+          ]
+        }
+      ]
+    },
+    {
+      "input": "@neovim-expert what formatter do I use for YAML?",
+      "mocks": {
+        "getConfigSummary": "Neovim Configuration Summary\nPath: /Users/test/.config/nvim\nTotal files: 12\n\nPlugin Manager: lazy.nvim (detected via: lazy-lock.json)\n\nKey files:\n  - init.lua\n\nDirectories:\n  - lua/",
+        "searchConfig": "Found 2 match(es) for \"yaml\":\n\nlua/plugins/conform.lua:3: yaml = { \"yamlfmt\" },\nlua/plugins/conform.lua:4: formatters = { yamlfmt = { prepend_args = { \"-formatter\", \"indent=2\" } } }"
+      },
+      "expected": [
+        { "callsTool": { "name": "getConfigSummary" } },
+        { "callsTool": { "name": "searchConfig", "arguments": { "query": { "includes": "yaml" } } } }
+      ]
+    },
+    {
+      "input": "@neovim-expert what's my colorscheme?",
+      "mocks": {
+        "getConfigSummary": "Neovim Configuration Summary\nPath: /Users/test/.config/nvim\nTotal files: 12\n\nPlugin Manager: lazy.nvim (detected via: lazy-lock.json)\n\nKey files:\n  - init.lua\n  - lua/config/options.lua\n\nDirectories:\n  - lua/",
+        "searchConfig": "Found 1 match(es) for \"colorscheme\":\n\nlua/config/options.lua:4: vim.opt.colorscheme = \"tokyonight\""
+      },
+      "expected": [
+        { "callsTool": { "name": "getConfigSummary" } },
+        { "callsTool": { "name": "searchConfig", "arguments": { "query": { "includes": "colorscheme" } } } }
+      ]
+    },
+    {
+      "input": "@neovim-expert how is completion set up?",
+      "mocks": {
+        "getConfigSummary": "Neovim Configuration Summary\nPath: /Users/test/.config/nvim\nTotal files: 12\n\nPlugin Manager: lazy.nvim (detected via: lazy-lock.json)\n\nKey files:\n  - init.lua\n\nDirectories:\n  - lua/",
+        "searchConfig": "Found 3 match(es) for \"cmp\":\n\nlua/plugins/completion.lua:1: return { \"hrsh7th/nvim-cmp\",\nlua/plugins/completion.lua:5: sources = cmp.config.sources({\nlua/plugins/completion.lua:8: })"
+      },
+      "expected": [
+        { "callsTool": { "name": "getConfigSummary" } },
+        {
+          "or": [
+            { "callsTool": { "name": "searchConfig", "arguments": { "query": { "includes": "cmp" } } } },
+            { "callsTool": { "name": "searchConfig", "arguments": { "query": { "includes": "completion" } } } }
+          ]
+        }
+      ]
+    }
+  ]
+}
